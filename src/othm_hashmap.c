@@ -31,33 +31,45 @@ static unsigned int Hashmap_Primes[24] = {
 	134217728 + 29, 268435456 + 3, 536870912 + 11, 1073741824 + 85, 0
 };
 
+struct othm_request *othm_request_new(int (*check_key)(void *storage, void *data),
+				      void *type, int data_size, void *data)
+{
+	struct othm_request *request;
+	request = malloc(sizeof(struct othm_request));
+	request->check_key = check_key;
+	request->type = type;
+	request->data_size = data_size;
+	request->data = data;
+	return request;
+}
+
 static void rehash(struct othm_hashmap *);
 
-/* Copies value of key pointer into the hashbin */
-static struct othm_hashbin *new_hashbin(char *key, void *storage)
+/* Copies value of request pointer into the hashbin */
+struct othm_hashbin *new_hashbin(struct othm_request *request, void *storage)
 {
 	struct othm_hashbin *new;
 
 	new = malloc(sizeof(struct othm_hashbin));
-	new->key = key;
+	new->key = request;
 	new->storage = storage;
 	new->next = NULL;
 }
 
-/* If key exists saved in some place the hashmap can uses safely
+/* If request exists saved in some place the hashmap can uses safely
   (such as a hashbin before a rehash) then use this method so
   there is no extra computation */
-static struct othm_hashbin *copy_hashbin(char *key, void *storage)
+struct othm_hashbin *copy_hashbin(struct othm_request *request, void *storage)
 {
 	struct othm_hashbin *new;
 
 	new = malloc(sizeof(struct othm_hashbin));
-	new->key = key;
+	new->key = request;
 	new->storage = storage;
 	new->next = NULL;
 }
 
-/* frees hashbin without freeing key, used in rehashing */
+/* frees hashbin without freeing request, used in rehashing */
 static void hashbin_free(struct othm_hashbin *hashbin)
 {
 	free(hashbin);
@@ -150,19 +162,18 @@ void othm_hashmap_free(struct othm_hashmap *hashmap)
 /*   } */
 /* } */
 
-/* checks to see if hashbin uses key*/
-static int check_key_hashbin(struct othm_hashbin *hashbin, char *key)
+/* checks to see if hashbin uses request*/
+static int check_request_hashbin(struct othm_hashbin *hashbin, struct othm_request *request)
 {
-	return (strcmp(hashbin->key, key) == 0) ? 1 : 0;
-
+	return request->check_key(hashbin->key->data, request->data);
 }
 
-/* Returns a hashbin given a key, else makes hashbin and returns that */
+/* Returns a hashbin given a request, else makes hashbin and returns that */
 static void search_add_top_hashbin(struct othm_hashmap *hashmap,
-				     struct othm_hashbin *top_hashbin,
-				     char *key, void *storage)
+				   struct othm_hashbin *top_hashbin,
+				   struct othm_request *request, void *storage)
 {
-	if (check_key_hashbin(top_hashbin, key))
+	if (check_request_hashbin(top_hashbin, request))
 		top_hashbin->storage = storage;
 	else {
 		struct othm_hashbin *next_hashbin;
@@ -172,34 +183,34 @@ static void search_add_top_hashbin(struct othm_hashmap *hashmap,
 			next_hashbin = top_hashbin->next;
 			int loop = 1;
 			while (loop) {
-				if (check_key_hashbin(next_hashbin, key)) {
+				if (check_request_hashbin(next_hashbin, request)) {
 					next_hashbin->storage = storage;
 					loop = 0;
 				} else if (next_hashbin->next == NULL) {
 					next_hashbin->next =
-					    new_hashbin(key, storage);
+					    new_hashbin(request, storage);
 					++(hashmap->entries_num);
 					loop = 0;
 				} else
 					next_hashbin = next_hashbin->next;
 			}
 		} else
-			top_hashbin->next = new_hashbin(key, storage);
+			top_hashbin->next = new_hashbin(request, storage);
 	}
 }
 
 /* You should never need to use this so long name is okay... I hate myself for this
    Returns hashbin if it exists, else makes new hashbin and returns it */
-static struct othm_hashbin *search_add_top_hashbin_old_key(struct
+static struct othm_hashbin *search_add_top_hashbin_old_request(struct
 							       othm_hashmap
 							       *hashmap,
 							       struct
 							       othm_hashbin
 							       *top_hashbin,
-							       char *key,
+							       struct othm_request *request,
 							       void *storage)
 {
-	if (check_key_hashbin(top_hashbin, key))
+	if (check_request_hashbin(top_hashbin, request))
 		top_hashbin->storage = storage;
 	else {
 		struct othm_hashbin *next_hashbin;
@@ -209,49 +220,48 @@ static struct othm_hashbin *search_add_top_hashbin_old_key(struct
 			next_hashbin = top_hashbin->next;
 			int loop = 1;
 			while (loop) {
-				if (check_key_hashbin(next_hashbin, key)) {
+				if (check_request_hashbin(next_hashbin, request)) {
 					next_hashbin->storage = storage;
 					loop = 0;
 				} else if (next_hashbin->next == NULL) {
 					next_hashbin->next =
-					    copy_hashbin(key, storage);
+					    copy_hashbin(request, storage);
 					++(hashmap->entries_num);
 					loop = 0;
 				} else
 					next_hashbin = next_hashbin->next;
 			}
 		} else {
-			top_hashbin->next = new_hashbin(key, storage);
+			top_hashbin->next = new_hashbin(request, storage);
 		}
 	}
 }
 
 /* Adds an element to the hashmap */
 void othm_hashmap_add(struct othm_hashmap *hashmap,
-			char *key, void *storage)
+		      struct othm_request *request, void *storage)
 {
 	struct othm_hashbin *top_hashbin;
 	unsigned int row;
 
-
 	if (hashmap->entries_num / hashmap->hashbin_num >=
 	    DEFAULT_ENTRIES_TO_HASHBINS)
 		rehash(hashmap);
-	row = MurmurHash2(key, strlen(key), DEFAULT_HASH_SEED)
+	row = MurmurHash2(request->data, request->data_size, DEFAULT_HASH_SEED)
 		% hashmap->hashbin_num;
         top_hashbin = hashmap->hashbins[row];
 	if (top_hashbin == NULL) {
-		hashmap->hashbins[row] = new_hashbin(key, storage);
+		hashmap->hashbins[row] = new_hashbin(request, storage);
 		++(hashmap->entries_num);
 		return;
 	}
 
-	search_add_top_hashbin(hashmap, top_hashbin, key, storage);
+	search_add_top_hashbin(hashmap, top_hashbin, request, storage);
 }
 
-/* Adds an element to the hashmap without allocating a new key. Used in rehashes */
+/* Adds an element to the hashmap without allocating a new request. Used in rehashes */
 static void readd_to_hashmap(struct othm_hashmap *hashmap,
-			       char *key, void *storage)
+			     struct othm_request *request, void *storage)
 {
 	struct othm_hashbin *top_hashbin;
 	unsigned int row;
@@ -259,38 +269,38 @@ static void readd_to_hashmap(struct othm_hashmap *hashmap,
 	if (hashmap->entries_num / hashmap->hashbin_num >=
 	    DEFAULT_ENTRIES_TO_HASHBINS)
 		rehash(hashmap);
-	row = MurmurHash2(key, strlen(key), DEFAULT_HASH_SEED)
+	row = MurmurHash2(request->data, request->data_size, DEFAULT_HASH_SEED)
 		% hashmap->hashbin_num;
         top_hashbin = hashmap->hashbins[row];
 	if (top_hashbin == NULL) {
-		hashmap->hashbins[row] = copy_hashbin(key, storage);
+		hashmap->hashbins[row] = copy_hashbin(request, storage);
 		++(hashmap->entries_num);
 		return;
 	}
 
-	search_add_top_hashbin_old_key(hashmap, top_hashbin, key,
+	search_add_top_hashbin_old_request(hashmap, top_hashbin, request,
 					 storage);
 }
 
 /* Gets an element from a hashmap */
-void *othm_hashmap_get(struct othm_hashmap *hashmap, char *key)
+void *othm_hashmap_get(struct othm_hashmap *hashmap, struct othm_request *request)
 {
 	struct othm_hashbin *top_hashbin;
 	struct othm_hashbin *next_hashbin;
 	unsigned int row;
 
-        row = MurmurHash2(key, strlen(key), DEFAULT_HASH_SEED)
+        row = MurmurHash2(request->data, request->data_size, DEFAULT_HASH_SEED)
 		% hashmap->hashbin_num;
 
 	top_hashbin = hashmap->hashbins[row];
 	if (top_hashbin == NULL)
 		return NULL;
-	if (check_key_hashbin(top_hashbin, key))
+	if (check_request_hashbin(top_hashbin, request))
 		return top_hashbin->storage;
 
         next_hashbin = top_hashbin->next;
 	while (next_hashbin != NULL) {
-		if (check_key_hashbin(next_hashbin, key))
+		if (check_request_hashbin(next_hashbin, request))
 			return next_hashbin->storage;
 		next_hashbin = next_hashbin->next;
 	}

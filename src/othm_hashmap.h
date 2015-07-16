@@ -17,8 +17,15 @@
 #ifndef OTHM_HASHMAP_H
 #define OTHM_HASHMAP_H
 
+struct othm_request {
+	void *type;
+	int data_size;
+	void *data;
+	int (*check_key)(void *storage, void *data);
+};
+
 struct othm_hashbin {
-	char *key;
+	struct othm_request *key;
 	void *storage;
 	struct othm_hashbin *next;
 };
@@ -30,6 +37,8 @@ struct othm_hashmap {
 	struct othm_hashbin **hashbins;
 };
 
+struct othm_request *othm_request_new(int (*check_key)(void *storage, void *data),
+				      void *type, int data_size, void *data);
 struct othm_hashmap *othm_hashmap_new_seq(int);
 
 struct othm_hashmap *othm_hashmap_new(void);
@@ -39,8 +48,8 @@ void othm_hashmap_free(struct othm_hashmap *hashmap);
 /* void othm_print_hashmap(struct othm_hashmap *hashmap); */
 
 void othm_hashmap_add(struct othm_hashmap *hashmap,
-		      char *key, void *storage);
+		      struct othm_request *request, void *storage);
 
-void *othm_hashmap_get(struct othm_hashmap *hashmap, char *key);
+void *othm_hashmap_get(struct othm_hashmap *hashmap, struct othm_request *request);
 
 #endif

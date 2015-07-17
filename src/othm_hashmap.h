@@ -37,6 +37,9 @@ struct othm_hashmap {
 	struct othm_hashbin **hashbins;
 };
 
+#define OTHMHASHMAP(HASHMAP) ((struct othm_hashmap *) (HASHMAP))
+#define OTHMREQUEST(REQUEST) ((struct othm_request *) (REQUEST))
+
 struct othm_request *othm_request_new(int (*check_key)(void *storage, void *data),
 				      void *type, int data_size, void *data);
 struct othm_hashmap *othm_hashmap_new_seq(int);

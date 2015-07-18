@@ -165,6 +165,8 @@ void othm_hashmap_free(struct othm_hashmap *hashmap)
 /* checks to see if hashbin uses request*/
 static int check_request_hashbin(struct othm_hashbin *hashbin, struct othm_request *request)
 {
+	if(hashbin->key->type != request->type)
+		return 0;
 	return request->check_key(hashbin->key->data, request->data);
 }
 

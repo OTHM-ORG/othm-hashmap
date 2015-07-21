@@ -24,6 +24,11 @@ struct othm_request {
 	int (*check_key)(void *storage, void *data);
 };
 
+struct othm_pair {
+	void *first;
+	void *second;
+};
+
 struct othm_hashbin {
 	struct othm_request *key;
 	void *storage;
@@ -42,6 +47,9 @@ struct othm_hashmap {
 
 struct othm_request *othm_request_new(int (*check_key)(void *storage, void *data),
 				      void *type, int data_size, void *data);
+
+struct othm_pair othm_pair_new(void *first, void *second);
+
 struct othm_hashmap *othm_hashmap_new_seq(int);
 
 struct othm_hashmap *othm_hashmap_new(void);
@@ -54,5 +62,8 @@ void othm_hashmap_add(struct othm_hashmap *hashmap,
 		      struct othm_request *request, void *storage);
 
 void *othm_hashmap_get(struct othm_hashmap *hashmap, struct othm_request *request);
+
+struct othm_pair othm_hashmap_remove(struct othm_hashmap *hashmap,
+				     struct othm_request *request);
 
 #endif

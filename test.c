@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <othm_hashmap.h>
 
 int str_request_cmp(void *storage, void *data)
@@ -20,4 +21,10 @@ int main(void)
 	othm_hashmap_add(a, c, str2);
 	printf("%s", (char *) othm_hashmap_get(a, b));
 	printf("%s", (char *) othm_hashmap_get(a, c));
+	othm_hashmap_remove(a, b);
+	if(othm_hashmap_get(a, b) == NULL)
+		printf("It is also fully functional!\n");
+	free(c);
+	free(b);
+	othm_hashmap_free(a);
 }

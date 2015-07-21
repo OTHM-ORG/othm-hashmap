@@ -5,31 +5,33 @@ SRC_FILES = \
 OBJ_PATH = bin
 OBJ_FILES = $(patsubst %,$(OBJ_PATH)/%,$(notdir $(SRC_FILES:.c=.o)))
 
-LIBRARY_FILE = libothm_hashmap.a
+LIBRARY_FILE = libothm_hashmap.so
 HEADER_FILE = othm_hashmap.h
 
 all: $(LIBRARY_FILE)
 
 $(LIBRARY_FILE): $(OBJ_FILES)
-	ar -cvq libothm_hashmap.a $(OBJ_FILES)
+	gcc -shared -o $(LIBRARY_FILE) $(OBJ_FILES)
 
 define make-obj
 $(patsubst %.c, $(OBJ_PATH)/%.o, $(notdir $(1))): $(1)
-	gcc -c $$< -o $$@
+	gcc -c -Wall -Werror -fPIC $$< -o $$@
 endef
 
 $(foreach src,$(SRC_FILES),$(eval $(call make-obj,$(src))))
 
 .PHONY : clean test install
 clean :
-	-rm -f $(LIBRARY_FILE) $(OBJ_FILES) test
-
+	-rm  $(LIBRARY_FILE) $(OBJ_FILES) test
 test :
-	gcc -static -o test test.c -lothm_hashmap
+	gcc -Wall -o test test.c -lothm_hashmap
 	./test
 install :
-	mv $(LIBRARY_FILE) /usr/lib/
+	cp $(LIBRARY_FILE) /usr/lib/
 	cp src/$(HEADER_FILE) /usr/include/
+	ldconfig
 uninstall :
-	rm -f /usr/lib/$(HEADER_FILE)
-	rm -f /usr/include/$(HEADER_FILE)
+	-rm  /usr/lib/$(LIBRARY_FILE)
+	-rm  /usr/include/$(HEADER_FILE)
+	ldconfig
+

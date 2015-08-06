@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DEFAULT_ENTRIES_TO_HASHBINS 5
+#define DEFAULT_ENTRIES_TO_HASHBINS 1
 #define DEFAULT_HASH_SEED 37
 
 const static int hashmap_primes[] = {
@@ -66,7 +66,6 @@ static struct othm_hashentry *new_hashentry(struct othm_request *request,
 	new_hashentry->key = request;
 	new_hashentry->storage = storage;
 	new_hashentry->next = NULL;
-	getchar();
 	return new_hashentry;
 }
 
@@ -260,8 +259,10 @@ static void rehash_add(struct othm_hashbin *hashbin,
 
         current_hashentry = hashbin->first;
 	adding_hashentry->next = NULL;
-	if(current_hashentry == NULL)
+	if(current_hashentry == NULL) {
 		hashbin->first = adding_hashentry;
+		return;
+	}
 	while(current_hashentry->next != NULL)
 		current_hashentry = current_hashentry->next;
 	current_hashentry->next = adding_hashentry;

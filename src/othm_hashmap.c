@@ -70,20 +70,6 @@ static struct othm_hashentry *new_hashentry(struct othm_request *request,
 	return new_hashentry;
 }
 
-/* /\* If request exists saved in some place the hashmap can uses safely */
-/*   (such as a hashbin before a rehash) then use this method so */
-/*   there is no extra computation *\/ */
-/* struct othm_hashbin *copy_hashentry(struct othm_request *request, void *storage) */
-/* { */
-/* 	struct othm_hashentry *new_hashentry; */
-
-/* 	new_hashentry = malloc(sizeof(struct othm_hashentry)); */
-/* 	new_hashentry->key = request; */
-/* 	new_hashentry->storage = storage; */
-/* 	new_hashentry->next = NULL; */
-/* 	return new_hashentry; */
-/* } */
-
 /* frees hashbin without freeing request, used in rehashing */
 static void hashentry_free(struct othm_hashentry *hashentry)
 {
@@ -160,23 +146,6 @@ void othm_hashmap_free(struct othm_hashmap *hashmap)
 	free(hashmap);
 }
 
-/* void othm_print_hashmap(struct othm_hashmap *hashmap) */
-/* { */
-/*   struct othm_hashbin **current_top_hashbin = hashmap->hashbins; */
-/*   unsigned int hashbin_num = hashmap->hashbin_num; */
-/*   unsigned int i; */
-/*   for(i = 0; i != hashbin_num; ++i) { */
-/*     struct othm_hashbin *current_hashbin = *current_top_hashbin; */
-/*     while(current_hashbin != NULL) { */
-/*       struct othm_hashbin *current_hashbin_holder = current_hashbin; */
-/*       current_hashbin = current_hashbin->next; */
-/*       printf("%s ", current_hashbin_holder->storage->prim_vals.string); */
-/*     } */
-/*     ++current_top_hashbin; */
-/*     printf("\n"); */
-/*   } */
-/* } */
-
 /* checks to see if hashentry uses request*/
 static int check_request_hashentry(struct othm_hashentry *hashentry,
 				   struct othm_request *request)
@@ -185,71 +154,6 @@ static int check_request_hashentry(struct othm_hashentry *hashentry,
 		return 0;
 	return request->check_key(hashentry->key->data, request->data);
 }
-
-/* /\* Returns a hashbin given a request, else makes hashbin and returns that *\/ */
-/* static void search_add_hashbin(struct othm_hashmap *hashmap, */
-/* 			       struct othm_hashbin *hashbin, */
-/* 			       struct othm_request *request, void *storage) */
-/* { */
-/* 	if (check_request_hashbin(top_hashbin->first, request)) */
-/* 		top_hashbin->storage = storage; */
-/* 	else { */
-/* 		struct othm_hashbin *next_hashbin; */
-
-/* 		next_hashbin = top_hashbin; */
-/* 		if (top_hashbin->next != NULL) { */
-/* 			next_hashbin = top_hashbin->next; */
-/* 			int loop = 1; */
-/* 			while (loop) { */
-/* 				if (check_request_hashbin(next_hashbin, request)) { */
-/* 					next_hashbin->storage = storage; */
-/* 					loop = 0; */
-/* 				} else if (next_hashbin->next == NULL) { */
-/* 					next_hashbin->next = */
-/* 					    new_hashbin(request, storage); */
-/* 					++(hashmap->entries_num); */
-/* 					loop = 0; */
-/* 				} else */
-/* 					next_hashbin = next_hashbin->next; */
-/* 			} */
-/* 		} else */
-/* 			top_hashbin->next = new_hashbin(request, storage); */
-/* 	} */
-/* } */
-
-/* /\* You should never need to use this so long name is okay... I hate myself for this */
-/*    Returns hashbin if it exists, else makes new hashbin and returns it *\/ */
-/* static void search_add_top_hashbin_old_request(struct othm_hashmap *hashmap, */
-/* 					       struct othm_hashbin *top_hashbin, */
-/* 					       struct othm_request *request, */
-/* 					       void *storage) */
-/* { */
-/* 	if (check_request_hashbin(top_hashbin, request)) */
-/* 		top_hashbin->storage = storage; */
-/* 	else { */
-/* 		struct othm_hashbin *next_hashbin; */
-
-/* 		next_hashbin = top_hashbin; */
-/* 		if (top_hashbin->next != NULL) { */
-/* 			next_hashbin = top_hashbin->next; */
-/* 			int loop = 1; */
-/* 			while (loop) { */
-/* 				if (check_request_hashbin(next_hashbin, request)) { */
-/* 					next_hashbin->storage = storage; */
-/* 					loop = 0; */
-/* 				} else if (next_hashbin->next == NULL) { */
-/* 					next_hashbin->next = */
-/* 					    copy_hashbin(request, storage); */
-/* 					++(hashmap->entries_num); */
-/* 					loop = 0; */
-/* 				} else */
-/* 					next_hashbin = next_hashbin->next; */
-/* 			} */
-/* 		} else { */
-/* 			top_hashbin->next = new_hashbin(request, storage); */
-/* 		} */
-/* 	} */
-/* } */
 
 /* Adds an element to the hashmap */
 int othm_hashmap_add(struct othm_hashmap *hashmap,
@@ -284,36 +188,9 @@ int othm_hashmap_add(struct othm_hashmap *hashmap,
 	hashentry->next = new_hashentry(request, storage);
 	++hashmap->entries_num;
 	return 0;
-	/* if (hashentry == NULL) { */
-	/* 	hashmap->hashbins[row].first = new_hashbin(request, storage); */
-	/* 	++hashmap->entries_num; */
-	/* 	return; */
-	/* } */
 
 }
 
-/* /\* Adds an element to the hashmap without allocating a new request. Used in rehashes *\/ */
-/* static void readd_to_hashmap(struct othm_hashmap *hashmap, */
-/* 			     struct othm_request *request, void *storage) */
-/* { */
-/* 	struct othm_hashbin *top_hashbin; */
-/* 	unsigned int row; */
-
-/* 	if (hashmap->entries_num / hashmap->hashbin_num >= */
-/* 	    DEFAULT_ENTRIES_TO_HASHBINS) */
-/* 		rehash(hashmap); */
-/* 	row = MurmurHash2(request->data, request->data_size, DEFAULT_HASH_SEED) */
-/* 		% hashmap->hashbin_num; */
-/*         top_hashbin = hashmap->hashbins[row]; */
-/* 	if (top_hashbin == NULL) { */
-/* 		hashmap->hashbins[row] = copy_hashbin(request, storage); */
-/* 		++(hashmap->entries_num); */
-/* 		return; */
-/* 	} */
-
-/* 	search_add_top_hashbin_old_request(hashmap, top_hashbin, request, */
-/* 					   storage); */
-/* } */
 
 /* Gets an element from a hashmap */
 void *othm_hashmap_get(struct othm_hashmap *hashmap,
@@ -332,17 +209,6 @@ void *othm_hashmap_get(struct othm_hashmap *hashmap,
 		hashentry = hashentry->next;
 	}
 	return NULL;
-	/* if (top_hashbin == NULL) */
-	/* 	return NULL; */
-	/* if (check_request_hashbin(top_hashbin, request)) */
-	/* 	return top_hashbin->storage; */
-
-        /* next_hashbin = top_hashbin->next; */
-	/* while (next_hashbin != NULL) { */
-	/* 	if (check_request_hashbin(next_hashbin, request)) */
-	/* 		return next_hashbin->storage; */
-	/* 	next_hashbin = next_hashbin->next; */
-	/* } */
 }
 
 /* struct othm_pair othm_hashmap_remove(struct othm_hashmap *hashmap, */
@@ -387,9 +253,60 @@ void *othm_hashmap_get(struct othm_hashmap *hashmap,
 /* 	return othm_pair_new(NULL, NULL); */
 /* } */
 
+static void rehash_add(struct othm_hashbin *hashbin,
+		       struct othm_hashentry *adding_hashentry)
+{
+	struct othm_hashentry *current_hashentry;
+
+        current_hashentry = hashbin->first;
+	adding_hashentry->next = NULL;
+	if(current_hashentry == NULL)
+		hashbin->first = adding_hashentry;
+	while(current_hashentry->next != NULL)
+		current_hashentry = current_hashentry->next;
+	current_hashentry->next = adding_hashentry;
+}
+
 /* Rehashes the hashmap */
 static void rehash(struct othm_hashmap *hashmap)
 {
+	struct othm_hashbin *old_hashbins;
+	struct othm_hashbin *new_hashbins;
+	struct othm_hashbin *current_hashbin;
+	unsigned int old_hashbin_num;
+	unsigned int new_hashbin_num;
+	unsigned int i;
+
+	old_hashbin_num = hashmap->hashbin_num;
+	new_hashbin_num = hashmap->primes_pointer[1];
+
+	old_hashbins = hashmap->hashbins;
+	new_hashbins = malloc(sizeof(struct othm_hashbin) *
+			      new_hashbin_num);
+
+	current_hashbin = old_hashbins;
+	for (i = 0; i != old_hashbin_num; ++i) {
+		struct othm_hashentry *current_hashentry;
+
+		current_hashentry = current_hashbin->first;
+		while (current_hashentry != NULL) {
+			struct othm_hashentry *current_hashentry_holder;
+			unsigned int row;
+
+			current_hashentry_holder = current_hashentry;
+			current_hashentry = current_hashentry->next;
+			row = MurmurHash2(current_hashentry_holder->key->data,
+					  current_hashentry_holder->key->data_size,
+					  DEFAULT_HASH_SEED) % new_hashbin_num;
+			rehash_add(new_hashbins + row, current_hashentry_holder);
+		}
+		++current_hashbin;
+	}
+	free(hashmap->hashbins);
+	hashmap->hashbins = new_hashbins;
+	++hashmap->primes_pointer;
+	hashmap->hashbin_num = new_hashbin_num;
+
 	/* struct othm_hashbin **old_hashbins; */
 	/* struct othm_hashbin **current_top_hashbin; */
 	/* struct othm_hashbin **rehashed_hashbins; */

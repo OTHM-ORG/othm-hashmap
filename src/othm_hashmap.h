@@ -29,17 +29,21 @@ struct othm_pair {
 	void *second;
 };
 
-struct othm_hashbin {
+struct othm_hashentry {
 	struct othm_request *key;
 	void *storage;
-	struct othm_hashbin *next;
+	struct othm_hashentry *next;
+};
+
+struct othm_hashbin {
+	struct othm_hashentry *first;
 };
 
 struct othm_hashmap {
 	unsigned int hashbin_num;
 	int entries_num;
-	int *Primes_pointer;
-	struct othm_hashbin **hashbins;
+	const int *primes_pointer;
+	struct othm_hashbin *hashbins;
 };
 
 #define OTHMHASHMAP(HASHMAP) ((struct othm_hashmap *) (HASHMAP))
@@ -58,12 +62,12 @@ void othm_hashmap_free(struct othm_hashmap *hashmap);
 
 /* void othm_print_hashmap(struct othm_hashmap *hashmap); */
 
-void othm_hashmap_add(struct othm_hashmap *hashmap,
+int othm_hashmap_add(struct othm_hashmap *hashmap,
 		      struct othm_request *request, void *storage);
 
 void *othm_hashmap_get(struct othm_hashmap *hashmap, struct othm_request *request);
 
-struct othm_pair othm_hashmap_remove(struct othm_hashmap *hashmap,
-				     struct othm_request *request);
+/* struct othm_pair othm_hashmap_remove(struct othm_hashmap *hashmap, */
+/* 				     struct othm_request *request); */
 
 #endif

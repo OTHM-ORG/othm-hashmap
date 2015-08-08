@@ -31,29 +31,6 @@ const static int hashmap_primes[] = {
 	134217728 + 29, 268435456 + 3, 536870912 + 11, 1073741824 + 85, 0
 };
 
-/* Creates a new request */
-struct othm_request *othm_request_new(int (*check_key)(void *storage, void *data),
-				      void *type, int data_size, void *data)
-{
-	struct othm_request *request;
-	request = malloc(sizeof(struct othm_request));
-	request->check_key = check_key;
-	request->type = type;
-	request->data_size = data_size;
-	request->data = data;
-	return request;
-}
-
-/* Creates a new pair */
-struct othm_pair othm_pair_new(void *first, void *second)
-{
-	struct othm_pair pair;
-
-	pair.first = first;
-	pair.second = second;
-	return pair;
-}
-
 static void rehash(struct othm_hashmap *);
 
 /* Copies value of request pointer into the hashbin */
@@ -149,7 +126,7 @@ void othm_hashmap_free(struct othm_hashmap *hashmap)
 static int check_request_hashentry(struct othm_hashentry *hashentry,
 				   struct othm_request *request)
 {
-	if(hashentry->key->type != request->type)
+	if(hashentry->key->key_type != request->key_type)
 		return 0;
 	return request->check_key(hashentry->key->data, request->data);
 }
@@ -164,30 +141,29 @@ int othm_hashmap_add(struct othm_hashmap *hashmap,
 	if (hashmap->entries_num / hashmap->hashbin_num >=
 	    DEFAULT_ENTRIES_TO_HASHBINS)
 		rehash(hashmap);
+
 	row = MurmurHash2(request->data, request->data_size, DEFAULT_HASH_SEED)
 		% hashmap->hashbin_num;
         hashentry = hashmap->hashbins[row].first;
 
-
 	if(hashentry == NULL) {
 		hashmap->hashbins[row].first = new_hashentry(request, storage);
 		++hashmap->entries_num;
-		return 0;
+		return OTHM_HASHMAP_ADDED;
 	}
 
 	if(check_request_hashentry(hashentry, request))
-		return 1;
+		return OTHM_HASHMAP_ALREADY_PRESENT;
 
 
 	while(hashentry->next != NULL) {
 		hashentry = hashentry->next;
 		if(check_request_hashentry(hashentry, request))
-			return 1;
+			return OTHM_HASHMAP_ALREADY_PRESENT;
 	}
 	hashentry->next = new_hashentry(request, storage);
 	++hashmap->entries_num;
-	return 0;
-
+	return OTHM_HASHMAP_ADDED;
 }
 
 
@@ -210,48 +186,7 @@ void *othm_hashmap_get(struct othm_hashmap *hashmap,
 	return NULL;
 }
 
-/* struct othm_pair othm_hashmap_remove(struct othm_hashmap *hashmap, */
-/* 				     struct othm_request *request) */
-/* { */
-/* 	struct othm_hashbin *previous_hashentry; */
-/* 	struct othm_hashbin *next_hashentry; */
-/* 	struct othm_pair removed; */
-/* 	unsigned int row; */
-
-/*         row = MurmurHash2(request->data, request->data_size, DEFAULT_HASH_SEED) */
-/* 		% hashmap->hashbin_num; */
-/* 	top_hashbin = hashmap->hashbins[row]; */
-/* 	if (top_hashbin == NULL) */
-/* 		return othm_pair_new(NULL, NULL); */
-/* 	if (check_request_hashbin(top_hashbin, request)) { */
-/* 		removed = othm_pair_new(top_hashbin->key, */
-/* 					top_hashbin->storage); */
-/* 		if (top_hashbin->next != NULL) { */
-/* 			*top_hashbin = *top_hashbin->next; */
-/* 			hashbin_free(top_hashbin->next); */
-/* 		} else { */
-/* 			hashbin_free(top_hashbin); */
-/* 			hashmap->hashbins[row] = NULL; */
-/* 		} */
-/* 		return removed; */
-/* 	} */
-
-/* 	previous_hashbin = top_hashbin; */
-/*         next_hashbin = top_hashbin->next; */
-/* 	while (next_hashbin != NULL) { */
-/* 		if (check_request_hashbin(next_hashbin, request)) { */
-/* 			removed = othm_pair_new(next_hashbin->key, */
-/* 						next_hashbin->storage); */
-/* 			previous_hashbin->next = next_hashbin->next; */
-/* 			hashbin_free(next_hashbin); */
-/* 			return removed; */
-/* 		} */
-/* 		previous_hashbin = next_hashbin; */
-/* 		next_hashbin = next_hashbin->next; */
-/* 	} */
-/* 	return othm_pair_new(NULL, NULL); */
-/* } */
-
+/* Adds to a bin something already in the hashmap during a rehash */
 static void rehash_add(struct othm_hashbin *hashbin,
 		       struct othm_hashentry *adding_hashentry)
 {
@@ -307,45 +242,4 @@ static void rehash(struct othm_hashmap *hashmap)
 	hashmap->hashbins = new_hashbins;
 	++hashmap->primes_pointer;
 	hashmap->hashbin_num = new_hashbin_num;
-
-	/* struct othm_hashbin **old_hashbins; */
-	/* struct othm_hashbin **current_top_hashbin; */
-	/* struct othm_hashbin **rehashed_hashbins; */
-	/* unsigned int old_hashbin_num; */
-	/* unsigned int new_hashbin_num; */
-	/* unsigned int i; */
-
-	/* old_hashbin_num = hashmap->hashbin_num; */
-	/* old_hashbins = hashmap->hashbins; */
-	/* hashmap->entries_num = 0; */
-	/* ++(hashmap->primes_pointer); */
-        /* new_hashbin_num = *(hashmap->primes_pointer); */
-	/* hashmap->hashbin_num = new_hashbin_num; */
-	/* rehashed_hashbins = */
-	/*     malloc(sizeof(struct othm_hashbin *) * new_hashbin_num); */
-	/* hashmap->hashbins = rehashed_hashbins; */
-
-	/* for (i = 0; i != new_hashbin_num; ++i) { */
-	/* 	*rehashed_hashbins = NULL; */
-	/* 	++rehashed_hashbins; */
-	/* } */
-
-        /* current_top_hashbin = old_hashbins; */
-	/* for (i = 0; i != old_hashbin_num; ++i) { */
-	/* 	struct othm_hashbin *current_hashbin; */
-
-	/* 	current_hashbin = *current_top_hashbin; */
-	/* 	while (current_hashbin != NULL) { */
-	/* 		readd_to_hashmap(hashmap, */
-	/* 				 current_hashbin->key, */
-	/* 				 current_hashbin->storage); */
-	/* 		struct othm_hashbin *current_hashbin_holder; */
-
-	/* 		current_hashbin_holder = current_hashbin; */
-	/* 		current_hashbin = current_hashbin->next; */
-	/* 		hashbin_free(current_hashbin_holder); */
-	/* 	} */
-	/* 	++current_top_hashbin; */
-	/* } */
-	/* free(old_hashbins); */
 }

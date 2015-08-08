@@ -10,12 +10,12 @@ HEADER_FILE = othm_hashmap.h
 
 all: $(LIBRARY_FILE)
 
-$(LIBRARY_FILE): $(OBJ_FILES)
-	gcc -g -shared -o $(LIBRARY_FILE) $(OBJ_FILES)
+$(LIBRARY_FILE): $(OBJ_FILES) src/$(HEADER_FILE)
+	gcc -shared -o $(LIBRARY_FILE) $(OBJ_FILES)
 
 define make-obj
 $(patsubst %.c, $(OBJ_PATH)/%.o, $(notdir $(1))): $(1)
-	gcc -g -c -Wall -Werror -fPIC $$< -o $$@
+	gcc -c -Wall -Werror -fPIC $$< -o $$@
 endef
 
 $(foreach src,$(SRC_FILES),$(eval $(call make-obj,$(src))))
@@ -24,7 +24,7 @@ $(foreach src,$(SRC_FILES),$(eval $(call make-obj,$(src))))
 clean :
 	-rm  $(LIBRARY_FILE) $(OBJ_FILES) test
 test :
-	gcc -g -Wall -o test test.c -lothm_hashmap
+	gcc -g -Wall -o test test.c -lothm_hashmap -lothm_base
 	./test
 install :
 	cp $(LIBRARY_FILE) /usr/lib/
@@ -34,4 +34,3 @@ uninstall :
 	-rm  /usr/lib/$(LIBRARY_FILE)
 	-rm  /usr/include/$(HEADER_FILE)
 	ldconfig
-

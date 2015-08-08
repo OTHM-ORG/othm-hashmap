@@ -17,17 +17,9 @@
 #ifndef OTHM_HASHMAP_H
 #define OTHM_HASHMAP_H
 
-struct othm_request {
-	void *type;
-	int data_size;
-	void *data;
-	int (*check_key)(void *storage, void *data);
-};
+#include <othm_base.h>
 
-struct othm_pair {
-	void *first;
-	void *second;
-};
+enum { OTHM_HASHMAP_ALREADY_PRESENT, OTHM_HASHMAP_ADDED };
 
 struct othm_hashentry {
 	struct othm_request *key;
@@ -47,12 +39,6 @@ struct othm_hashmap {
 };
 
 #define OTHMHASHMAP(HASHMAP) ((struct othm_hashmap *) (HASHMAP))
-#define OTHMREQUEST(REQUEST) ((struct othm_request *) (REQUEST))
-
-struct othm_request *othm_request_new(int (*check_key)(void *storage, void *data),
-				      void *type, int data_size, void *data);
-
-struct othm_pair othm_pair_new(void *first, void *second);
 
 struct othm_hashmap *othm_hashmap_new_seq(int);
 
@@ -60,14 +46,11 @@ struct othm_hashmap *othm_hashmap_new(void);
 
 void othm_hashmap_free(struct othm_hashmap *hashmap);
 
-/* void othm_print_hashmap(struct othm_hashmap *hashmap); */
-
 int othm_hashmap_add(struct othm_hashmap *hashmap,
-		      struct othm_request *request, void *storage);
+		     struct othm_request *request,
+		     void *storage);
 
-void *othm_hashmap_get(struct othm_hashmap *hashmap, struct othm_request *request);
-
-/* struct othm_pair othm_hashmap_remove(struct othm_hashmap *hashmap, */
-/* 				     struct othm_request *request); */
+void *othm_hashmap_get(struct othm_hashmap *hashmap,
+		       struct othm_request *request);
 
 #endif

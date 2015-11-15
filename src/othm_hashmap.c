@@ -53,13 +53,13 @@ static void hashentry_free(struct othm_hashentry *hashentry)
 }
 
 /* creates a new hashmap */
-struct othm_hashmap *othm_hashmap_new(void)
+struct othm_hashmap *othm_hashmap_new(struct othm_hashmap *(*gen)(void))
 {
 	struct othm_hashmap *new_hashmap;
 	struct othm_hashbin *hashbin_ptr;
 	int i;
 
-	new_hashmap = malloc(sizeof(struct othm_hashmap));
+	new_hashmap = gen();
 	new_hashmap->hashbin_num = hashmap_primes[0];
 	new_hashmap->hashbins =
 		malloc(sizeof(struct othm_hashbin) * hashmap_primes[0]);
@@ -75,13 +75,14 @@ struct othm_hashmap *othm_hashmap_new(void)
 
 /* Avoid uneeded rehashings by setting up the hashmap at creation
    with a point in the sequence */
-struct othm_hashmap *othm_hashmap_new_seq(int sequence)
+struct othm_hashmap *othm_hashmap_new_seq(struct othm_hashmap *(*gen)(void),
+					  int sequence)
 {
 	struct othm_hashmap *new_hashmap;
 	struct othm_hashbin *hashbin_ptr;
 	int i;
 
-	new_hashmap = malloc(sizeof(struct othm_hashmap));
+	new_hashmap = gen();
 	new_hashmap->hashbin_num = hashmap_primes[sequence];
 	new_hashmap->hashbins =
 		malloc(sizeof(struct othm_hashbin) *
@@ -97,7 +98,8 @@ struct othm_hashmap *othm_hashmap_new_seq(int sequence)
 }
 
 /* Final freeing of hashmap */
-void othm_hashmap_free(struct othm_hashmap *hashmap)
+void othm_hashmap_free(void (*map_free)(struct othm_hashmap *map),
+		       struct othm_hashmap *hashmap)
 {
 	struct othm_hashbin *current_hashbin;
 	unsigned int hashbin_num;
@@ -119,7 +121,7 @@ void othm_hashmap_free(struct othm_hashmap *hashmap)
 		++current_hashbin;
 	}
 	free(hashmap->hashbins);
-	free(hashmap);
+	map_free(hashmap);
 }
 
 /* checks to see if hashentry uses request*/

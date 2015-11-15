@@ -8,12 +8,22 @@ int str_request_cmp(void *storage, void *data)
 	return !(strcmp((char *)storage, (char *)data));
 }
 
+struct othm_hashmap *hasmap_gen(void)
+{
+	return malloc(sizeof(struct othm_hashmap));
+}
+
+void hashmap_free(struct othm_hashmap *map)
+{
+	free(map);
+}
+
 int main(void)
 {
 	char *str  = "If you are seeing this, ";
 	char *str2 = "you built othm_hashmap! ";
 	char *str3 = "Yay!\n";
-	struct othm_hashmap *a = othm_hashmap_new();
+	struct othm_hashmap *a = othm_hashmap_new(hasmap_gen);
 
 
 	struct othm_request *b = othm_request_new
@@ -37,6 +47,6 @@ int main(void)
 	/* 	printf("It is also fully functional!\n"); */
 	free(c);
 	free(b);
-	othm_hashmap_free(a);
+	othm_hashmap_free(hashmap_free, a);
 	return 0;
 }

@@ -59,7 +59,10 @@ struct othm_hashmap *othm_hashmap_new(struct othm_hashmap *(*gen)(void))
 	struct othm_hashbin *hashbin_ptr;
 	int i;
 
-	new_hashmap = gen();
+	if (gen != NULL)
+		new_hashmap = gen();
+	else
+		new_hashmap = malloc(sizeof(struct othm_hashmap));
 	new_hashmap->hashbin_num = hashmap_primes[0];
 	new_hashmap->hashbins =
 		malloc(sizeof(struct othm_hashbin) * hashmap_primes[0]);

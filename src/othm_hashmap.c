@@ -124,7 +124,10 @@ void othm_hashmap_free(void (*map_free)(struct othm_hashmap *map),
 		++current_hashbin;
 	}
 	free(hashmap->hashbins);
-	map_free(hashmap);
+	if (map_free != NULL)
+		map_free(hashmap);
+	else
+		free(hashmap);
 }
 
 /* checks to see if hashentry uses request*/

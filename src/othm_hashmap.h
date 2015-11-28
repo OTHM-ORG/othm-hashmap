@@ -45,8 +45,8 @@ struct othm_hashmap *othm_hashmap_new_seq(struct othm_hashmap *(*gen)(void),
 
 struct othm_hashmap *othm_hashmap_new(struct othm_hashmap *(*gen)(void));
 
-void othm_hashmap_free(void (*map_free)(struct othm_hashmap *map),
-		       struct othm_hashmap *hashmap);
+void othm_hashmap_free(struct othm_hashmap *hashmap,
+		       void (*map_free)(struct othm_hashmap *map));
 
 int othm_hashmap_add(struct othm_hashmap *hashmap,
 		     struct othm_request *request,

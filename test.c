@@ -47,6 +47,6 @@ int main(void)
 	/* 	printf("It is also fully functional!\n"); */
 	free(c);
 	free(b);
-	othm_hashmap_free(hashmap_free, a);
+	othm_hashmap_free(a, hashmap_free);
 	return 0;
 }

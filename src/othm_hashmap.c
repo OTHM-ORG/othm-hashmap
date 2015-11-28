@@ -101,8 +101,8 @@ struct othm_hashmap *othm_hashmap_new_seq(struct othm_hashmap *(*gen)(void),
 }
 
 /* Final freeing of hashmap */
-void othm_hashmap_free(void (*map_free)(struct othm_hashmap *map),
-		       struct othm_hashmap *hashmap)
+void othm_hashmap_free(struct othm_hashmap *hashmap,
+		       void (*map_free)(struct othm_hashmap *map))
 {
 	struct othm_hashbin *current_hashbin;
 	unsigned int hashbin_num;

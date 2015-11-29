@@ -190,6 +190,7 @@ void othm_hashmap_remove(struct othm_hashmap *hashmap,
 	if(check_request_hashentry(hashentry, request)) {
 		hashmap->hashbins[row].first = hashentry->next;
 		hashentry_free(hashentry);
+		--hashmap->entries_num;
 		return;
 	}
 
@@ -199,6 +200,7 @@ void othm_hashmap_remove(struct othm_hashmap *hashmap,
 		if(check_request_hashentry(next, request)) {
 			hashentry->next = next->next;
 			hashentry_free(next);
+			--hashmap->entries_num;
 			return;
 		}
 		hashentry = next;

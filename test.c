@@ -42,9 +42,9 @@ int main(void)
 	printf("%s", (char *) othm_hashmap_get(a, c));
 	printf("%s", (char *) othm_hashmap_get(a, d));
 
-	/* othm_hashmap_remove(a, b); */
-	/* if(othm_hashmap_get(a, b) == NULL) */
-	/* 	printf("It is also fully functional!\n"); */
+	othm_hashmap_remove(a, b);
+	if(othm_hashmap_get(a, b) == NULL)
+		printf("It is also fully functional!\n");
 	free(c);
 	free(b);
 	othm_hashmap_free(a, hashmap_free);

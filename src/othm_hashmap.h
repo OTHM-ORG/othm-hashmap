@@ -52,6 +52,9 @@ int othm_hashmap_add(struct othm_hashmap *hashmap,
 		     struct othm_request *request,
 		     void *storage);
 
+void othm_hashmap_remove(struct othm_hashmap *hashmap,
+			 struct othm_request *request);
+
 void *othm_hashmap_get(struct othm_hashmap *hashmap,
 		       struct othm_request *request);
 

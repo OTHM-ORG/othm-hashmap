@@ -174,6 +174,36 @@ int othm_hashmap_add(struct othm_hashmap *hashmap,
 	return OTHM_HASHMAP_ADDED;
 }
 
+void othm_hashmap_remove(struct othm_hashmap *hashmap,
+			 struct othm_request *request)
+{
+	struct othm_hashentry *hashentry;
+	unsigned int row;
+
+	row = MurmurHash2(request->data, request->data_size, DEFAULT_HASH_SEED)
+		% hashmap->hashbin_num;
+        hashentry = hashmap->hashbins[row].first;
+
+	if(hashentry == NULL)
+		return;
+
+	if(check_request_hashentry(hashentry, request)) {
+		hashmap->hashbins[row].first = hashentry->next;
+		hashentry_free(hashentry);
+		return;
+	}
+
+
+	while(hashentry->next != NULL) {
+		struct othm_hashentry *next = hashentry->next;
+		if(check_request_hashentry(next, request)) {
+			hashentry->next = next->next;
+			hashentry_free(next);
+			return;
+		}
+		hashentry = next;
+	}
+}
 
 /* Gets an element from a hashmap */
 void *othm_hashmap_get(struct othm_hashmap *hashmap,
